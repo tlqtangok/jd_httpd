@@ -25,6 +25,17 @@ nodemon --watch /usr/local/apache2/be --legacy-watch /usr/local/apache2/be/serve
 BACKEND_PID=$!
 echo "Unified backend server started with PID: $BACKEND_PID (auto-reload enabled)"
 
+# Start C++ CLI server
+echo "Starting C++ CLI server..."
+cd /usr/local/apache2/be/cpp_cli_srv
+./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd &
+CPP_SRV_PID=$!
+echo $CPP_SRV_PID > ../cpp_srv.pid
+echo "C++ CLI server started with PID: $CPP_SRV_PID (port 3001)"
+echo "  - Log file: /usr/local/apache2/be/cpp_srv.log"
+echo "  - PID file: /usr/local/apache2/be/cpp_srv.pid"
+cd /usr/local/apache2
+
 # Start Apache httpd in foreground
 echo "Starting Apache httpd..."
 exec httpd-foreground
