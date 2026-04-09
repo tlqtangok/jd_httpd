@@ -28,6 +28,7 @@ echo "Unified backend server started with PID: $BACKEND_PID (auto-reload enabled
 # Start C++ CLI server
 echo "Starting C++ CLI server..."
 cd /usr/local/apache2/be/cpp_cli_srv
+chmod +x ./build/cpp_srv ./build/cpp_cli
 ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd &
 CPP_SRV_PID=$!
 echo $CPP_SRV_PID > ../cpp_srv.pid
