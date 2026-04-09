@@ -24,27 +24,29 @@ if [ $? == 0 ]; then  # Fixed condition check
     
     sleep 5
     
-    # Improved process killing logic
-    pid=$(pidof cpp_srv)  # Get first matching PID
-    if [ -n "$pid" ]; then
-        kill -9 "$pid"
-    fi
 
     rm -f pkg.tgz  # Changed to regular file deletion
     tfr f  # Commented out - unknown command
     if [ -e pkg.tgz ]; then
 		tar xvzf pkg.tgz  # Commented out - depends on tfr
+
+        # Improved process killing logic
+        pid=$(pidof cpp_srv)  # Get first matching PID
+        if [ -n "$pid" ]; then
+            kill -9 "$pid"
+            sleep 1
+
+            # Start server in background to prevent blocking
+            (
+                echo "now restart cpp_cli_srv ... "
+                cd "$t/cpp_cli_srv" && chmod +x build/cpp_srv build/cpp_cli &&
+                nohup ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd  > /dev/null 2>&1 &
+            )
+
+        fi
+
 	fi
 
-    # Start server in background to prevent blocking
-	
-
-    (
-	echo "now restart cpp_cli_srv ... "
-
-        cd "$t/cpp_cli_srv" && chmod +x build/cpp_srv build/cpp_cli &&
-        nohup ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd & > /dev/null 2>&1 &
-    )
 fi
 
 popd

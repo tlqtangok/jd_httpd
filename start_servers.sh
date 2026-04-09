@@ -35,6 +35,11 @@ echo $CPP_SRV_PID > ../cpp_srv.pid
 echo "C++ CLI server started with PID: $CPP_SRV_PID (port 3001)"
 echo "  - Log file: /usr/local/apache2/be/cpp_srv.log"
 echo "  - PID file: /usr/local/apache2/be/cpp_srv.pid"
+
+sleep 1s
+nohup bash /usr/local/apache2/be/cpp_cli_srv/restart_cpp_srv.sh &
+echo "C++ CLI server auto-reload enabled (watching for changes in /usr/local/apache2/be/cpp_cli_srv/build)"
+
 cd /usr/local/apache2
 
 # Start Apache httpd in foreground
