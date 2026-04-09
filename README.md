@@ -245,6 +245,32 @@ This image supports **three ways** to handle requests:
 
 Choose the method that fits your use case!
 
+### 5. ⚡ C++ CLI Server (Port 3001)
+
+A high-performance C++ backend service runs alongside the Node.js server:
+
+- **Port:** 3001 (internal only, not exposed to HTTP)
+- **Binary:** `be/cpp_cli_srv/build/cpp_srv`
+- **Features:** Multi-threaded, token-based auth, configurable logging
+- **Log:** Accessible at `be/cpp_srv.log`
+
+**Use this for:**
+- CPU-intensive computations
+- High-throughput tasks
+- Low-latency operations
+- Custom protocols
+
+**Configuration:**
+```bash
+./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd
+```
+
+Parameters:
+- `--port` - Listen port (default: 3001)
+- `--threads` - Worker threads (default: 2)
+- `--token` - Authentication token (default: jd)
+- `--log` - Log file path
+
 ## 🔄 How to Make Changes
 
 ### 🎨 Editing Frontend (HTML/CSS/JS)
@@ -361,6 +387,61 @@ start_httpd_test.bat
 | `stop_httpd_test.bat` | Stop container | When done testing |
 | `restart_httpd_test.bat` | Restart container | Apply config changes |
 | `logs_httpd_test.bat` | View container logs | Debug issues |
+
+## ⚡ C++ CLI Server (Port 3001)
+
+A high-performance C++ backend service runs alongside the Node.js server for CPU-intensive tasks.
+
+**Key Features:**
+- **Port:** 3001 (internal only, not exposed via HTTP)
+- **Binary:** `be/cpp_cli_srv/build/cpp_srv`
+- **Multi-threaded:** Configurable worker threads
+- **Token-based auth:** Secure communication
+- **Logging:** Detailed operation logs
+
+**Starting the server (automatic in Docker):**
+```bash
+./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd
+```
+
+**Parameters:**
+- `--port` - Listen port (internal only)
+- `--threads` - Number of worker threads
+- `--token` - Authentication token for API calls
+- `--log` - Path to log file
+- `--ssl` - Path to SSL certificates (optional)
+- `--port_https` - HTTPS listen port (optional)
+
+**Use cases:**
+- CPU-intensive computations
+- High-throughput batch processing
+- Real-time data analysis
+- Custom protocol implementations
+- C++ integrations
+
+**Monitoring:**
+```bash
+# View logs
+docker exec httpd-test tail -f /usr/local/apache2/be/cpp_srv.log
+
+# Check if running
+docker exec httpd-test ps aux | grep cpp_srv
+
+# Get PID
+docker exec httpd-test cat /usr/local/apache2/be/cpp_srv.pid
+```
+
+**Client Integration from Node.js:**
+```javascript
+// Connect to C++ server on port 3001
+const socket = require('net').createConnection({
+    port: 3001,
+    host: 'localhost'
+});
+
+socket.write('token:jd\n'); // Send token
+socket.write('command_data\n'); // Send command
+```
 
 ## 🧪 Testing Your Setup
 
@@ -587,10 +668,55 @@ For more detailed information, check these docs:
 - `README_httpd-nodejs.md` - Quick reference guide
 - `FINAL_STATUS.md` - Current system status
 
+## 🚀 C++ CLI Server Details
+
+**Location:** `be/cpp_cli_srv/`
+
+**Directory contents:**
+- `build/cpp_srv` - Compiled C++ binary
+- `data/` - Configuration and data files
+- `start_srv.sh` - Standalone startup script
+- `restart_cpp_srv.sh` - Restart script
+- `tfr.config` - Transport/file configuration
+
+**Folder structure:**
+```
+be/cpp_cli_srv/
+├── build/
+│   ├── cpp_srv          ← Main binary (started automatically)
+│   └── cpp_cli          ← CLI client tool
+├── data/
+│   ├── GLOBAL_JSON.json ← Global settings
+│   └── test.json        ← Test configuration
+├── web/                 ← Web interface (optional)
+├── start_srv.sh         ← Startup script
+├── restart_cpp_srv.sh   ← Restart helper
+└── tfr.config           ← Configuration file
+```
+
+**How it's integrated:**
+1. Automatically started by `start_servers.sh` in Docker
+2. Runs on port 3001 (internal, not exposed to HTTP)
+3. Uses token authentication (token: `jd` by default)
+4. Logs to `/usr/local/apache2/be/cpp_srv.log`
+5. PID stored in `/usr/local/apache2/be/cpp_srv.pid`
+
+**Building from source:**
+```bash
+cd be/cpp_cli_srv
+./build/cpp_srv --help    # Show all options
+```
+
+**Communication protocol:**
+- Text-based protocol over TCP port 3001
+- Token-based authentication required
+- Configurable thread pool for concurrency
+
 ---
 
 ## 📝 Version History
 
+- **v3.2.0+** (2026-04-09) - Added C++ CLI server (port 3001) for high-performance tasks 🚀
 - **v3.2.0** (2026-03-23) - Auto-proxy pattern, no more httpd.conf edits! 🎉
 - **v3.1.0** (2026-03-19) - Clearer routes, unified CGI, GET support ✅
 - **v3.0.0** (2026-03-19) - Unified backend, auth system, consistent routing ✅
