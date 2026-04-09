@@ -4,27 +4,32 @@ A production-ready Docker image combining **Apache HTTPD** with **Node.js** back
 
 **Perfect for:** Web applications, API backends, file storage, and development environments
 
-## ⚡ For Newcomers - Start Here!
+## ⚡ Quick Start (Linux)
 
 **Prerequisites:**
-- Docker installed ([Get Docker](https://docs.docker.com/get-docker/))
-- Windows: Use the `.bat` scripts provided
-- Linux/Mac: Use `start_servers.sh` or adapt the batch scripts
+- Docker and Docker Compose installed ([Get Docker](https://docs.docker.com/get-docker/))
+- Linux environment (Ubuntu, Debian, CentOS, etc.)
 
 **Three steps to get started:**
 
 ```bash
-# 1. Build the Docker image (takes ~2-5 minutes)
-build_image.bat
+# 1. Clone the repository
+git clone https://github.com/tlqtangok/jd_httpd.git
+cd jd_httpd
 
-# 2. Start the container
-start_httpd_test.bat
+# 2. Build and start the container
+docker build --no-cache -t jd-httpd:latest .
+docker run -d --name httpd-test -p 10248:80 \
+  -v "$(pwd)/html:/usr/local/apache2/htdocs" \
+  -v "$(pwd)/be:/usr/local/apache2/be" \
+  -v "$(pwd)/uploads:/usr/local/apache2/uploads" \
+  jd-httpd:latest
 
 # 3. Open your browser
-http://localhost:10248/
+# http://localhost:10248/
 ```
 
-That's it! You now have a running web server with Node.js backend.
+That's it! You now have a running web server with Node.js and C++ backends.
 
 ## 🎯 What's New in v3.2.0
 
@@ -57,19 +62,22 @@ create_httpd_img/
 │   ├── login.html              → User login page
 │   ├── register.html           → User registration page
 │   ├── hello.html              → Protected welcome page
-│   ├── httpd_be_test.html      → Backend test suite (all 4 forms)
+│   ├── httpd_be_test.html      → Backend test suite
 │   └── inputtest_proxypass_reverse.html → ProxyPass tests
-├── be/            → Backend Node.js (BIND MOUNT - auto-reload with nodemon)
-│   ├── server.js              → Unified Express server (port 3000)
-│   └── package.json           → Dependencies (express)
-├── cgi-bin/       → CGI scripts (COPIED TO IMAGE - rebuild needed)
-├── ssl/           → SSL certificates (COPIED TO IMAGE)
+├── be/            → Backend services (BIND MOUNT - auto-reload)
+│   ├── server.js               → Node.js Express server (port 3000)
+│   ├── cpp_cli_srv/            → C++ server (port 3001)
+│   │   ├── build/cpp_srv       → Compiled C++ binary
+│   │   ├── data/               → Configuration files
+│   │   └── start_srv.sh        → Startup script
+│   └── package.json            → Dependencies
+├── cgi-bin/       → CGI scripts (COPIED - rebuild needed)
+├── ssl/           → SSL certificates (COPIED - rebuild needed)
 ├── uploads/       → WebDAV storage + user data (BIND MOUNT)
-│   └── user_info.json         → User credentials (auto-created)
-├── *.bat          → Management scripts (Windows)
+│   └── user_info.json          → User credentials (auto-created)
 ├── start_servers.sh → Container startup script
 ├── httpd.conf     → Apache configuration
-└── Dockerfile     → Build config
+└── Dockerfile     → Build configuration
 ```
 
 ## 🚀 Quick Start Guide
@@ -81,22 +89,14 @@ cd jd_httpd
 ```
 
 ### Step 2: Build the Docker Image
-```batch
-# Windows
-build_image.bat
-
-# Linux/Mac
+```bash
 docker build --no-cache -t jd-httpd:latest .
 ```
 
-This takes 2-5 minutes on first build. It installs Apache, Node.js, and all dependencies.
+This takes 2-5 minutes on first build. It installs Apache, Node.js, C++ runtime, and all dependencies.
 
 ### Step 3: Start the Container
-```batch
-# Windows
-start_httpd_test.bat
-
-# Linux/Mac
+```bash
 docker run -d --name httpd-test -p 10248:80 \
   -v "$(pwd)/html:/usr/local/apache2/htdocs" \
   -v "$(pwd)/be:/usr/local/apache2/be" \
@@ -114,14 +114,11 @@ Open your browser and visit:
 | 🔐 **Login** | http://localhost:10248/login.html | User authentication |
 | 📝 **Register** | http://localhost:10248/register.html | Create new account |
 | ✅ **Test Suite** | http://localhost:10248/httpd_be_test.html | Backend test forms |
+| 🚀 **C++ Server** | http://localhost:10248/cpp_srv/ | C++ CLI server interface |
 | 📁 **WebDAV** | http://localhost:10248/uploads/ | File storage (user: `jd`, pass: `pw`) |
 
 ### Step 5: Stop the Container
-```batch
-# Windows
-stop_httpd_test.bat
-
-# Linux/Mac
+```bash
 docker stop httpd-test && docker rm httpd-test
 ```
 
@@ -162,6 +159,15 @@ docker stop httpd-test && docker rm httpd-test
 | POST | `/cgi-bin/cgi.js` | Unified CGI handler (form) | `application/x-www-form-urlencoded` |
 | POST | `/cgi-bin/cgi.js` | Unified CGI handler (JSON) | `application/json` |
 | GET | `/cgi-bin/cgi.js` | GET with URL parameters | Query string: `?inputstr=value` |
+
+### C++ CLI Server Endpoints (Port 3001)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/cpp_srv/` | C++ CLI server root |
+| GET/POST | `/c/` | Short alias for C++ server |
+
+Access via: `http://localhost:10248/cpp_srv/` or `http://localhost:10248/c/`
 
 ## 💡 Key Features Explained
 
@@ -279,7 +285,8 @@ Parameters:
 
 ```bash
 # 1. Edit the file
-notepad html\login.html
+vim html/login.html
+# or use your editor: nano, code, gedit, etc.
 
 # 2. Save it
 # 3. Refresh browser - changes appear immediately!
@@ -295,7 +302,7 @@ notepad html\login.html
 
 ```bash
 # 1. Edit the backend
-notepad be\server.js
+vim be/server.js
 
 # 2. Save it
 # 3. Wait ~1 second (watch Docker logs to see nodemon restart)
@@ -323,14 +330,18 @@ These files are **copied into the image** during build, so changes require rebui
 
 ```bash
 # 1. Edit the file
-notepad httpd.conf
+vim httpd.conf
 
 # 2. Rebuild the image
-build_image.bat
+docker build --no-cache -t jd-httpd:latest .
 
 # 3. Restart the container
-stop_httpd_test.bat
-start_httpd_test.bat
+docker stop httpd-test && docker rm httpd-test
+docker run -d --name httpd-test -p 10248:80 \
+  -v "$(pwd)/html:/usr/local/apache2/htdocs" \
+  -v "$(pwd)/be:/usr/local/apache2/be" \
+  -v "$(pwd)/uploads:/usr/local/apache2/uploads" \
+  jd-httpd:latest
 ```
 
 **When to rebuild:**
@@ -522,12 +533,16 @@ curl -u "jd:pw" "http://localhost:10248/uploads/" -X PROPFIND
 curl -u "jd:pw" "http://localhost:10248/uploads/user_info.json"
 ```
 
-**Using WinSCP (Recommended for Windows):**
-1. Protocol: **WebDAV**
-2. Host: `localhost`
-3. Port: `10248`
-4. Path: `/uploads`
-5. User: `jd` / Password: `pw`
+**Using Linux file manager or davfs2:**
+```bash
+# Mount WebDAV as a local folder
+mkdir -p ~/mnt/httpd-webdav
+sudo mount -t davfs http://localhost:10248/uploads ~/mnt/httpd-webdav -o uid=$(id -u),gid=$(id -g)
+
+# Then browse like a normal folder
+cd ~/mnt/httpd-webdav
+ls -la
+```
 
 ## 🐛 Troubleshooting
 
@@ -536,11 +551,11 @@ curl -u "jd:pw" "http://localhost:10248/uploads/user_info.json"
 **Solution:**
 ```bash
 # Stop the running container
-stop_httpd_test.bat
+docker stop httpd-test && docker rm httpd-test
 
 # Or find what's using the port
-netstat -ano | findstr :10248
-# Then kill the process or change the port in start_httpd_test.bat
+sudo netstat -tulpn | grep :10248
+# Then kill the process or use a different port
 ```
 
 ---
@@ -549,14 +564,14 @@ netstat -ano | findstr :10248
 
 **Check if nodemon is running:**
 ```bash
-docker logs httpd-test | findstr nodemon
+docker logs httpd-test | grep nodemon
 
 # You should see: [nodemon] watching path(s): *.*
 ```
 
 **Force restart:**
 ```bash
-restart_httpd_test.bat
+docker restart httpd-test
 ```
 
 ---
@@ -582,10 +597,10 @@ docker exec httpd-test curl http://localhost:3000/post/login
 
 **Check uploads folder:**
 ```bash
-dir uploads\user_info.json
+ls -la uploads/user_info.json
 
 # If missing, check volume mount:
-docker inspect httpd-test | findstr uploads
+docker inspect httpd-test | grep -A 5 Mounts
 ```
 
 ---
@@ -595,7 +610,22 @@ docker inspect httpd-test | findstr uploads
 **Clear Docker cache and rebuild:**
 ```bash
 docker system prune -a
-build_image.bat
+docker build --no-cache -t jd-httpd:latest .
+```
+
+---
+
+### ❌ "C++ server not responding"
+
+**Check if C++ server is running:**
+```bash
+docker exec httpd-test ps aux | grep cpp_srv
+
+# Check logs
+docker exec httpd-test tail -f /usr/local/apache2/be/cpp_srv.log
+
+# Get PID
+docker exec httpd-test cat /usr/local/apache2/be/cpp_srv.pid
 ```
 
 ---
@@ -603,10 +633,7 @@ build_image.bat
 ### 📋 View Container Logs
 
 ```bash
-# Windows
-logs_httpd_test.bat
-
-# Or manually
+# Manually view logs
 docker logs httpd-test
 
 # Follow logs in real-time
@@ -639,22 +666,9 @@ cat /usr/local/apache2/conf/httpd.conf | grep Proxy
 - 🚀 **Add routes easily:** Just add to `server.js` - no config edits needed for `/get/*` or `/post/*`
 - 🔑 **Token expires fast:** Default is 60 seconds, change in `be/server.js` if needed
 - 📁 **WebDAV credentials:** Username `jd`, password `pw` (change in `httpd.conf`)
-- 🔍 **View logs:** Use `logs_httpd_test.bat` to debug issues
+- 🔍 **View logs:** Use `docker logs httpd-test` to debug issues
 - 📝 **Directory listing:** Enabled by default at http://localhost:10248/
-
----
-
-## 🛠️ Management Scripts (Windows)
-
-| Script | Purpose |
-|--------|---------|
-| `build_image.bat` | Build Docker image from scratch |
-| `start_httpd_test.bat` | Start container with volume mounts |
-| `stop_httpd_test.bat` | Stop and remove container |
-| `restart_httpd_test.bat` | Restart container (keeps volumes) |
-| `logs_httpd_test.bat` | View container logs |
-
-**Linux/Mac users:** Check the scripts to see the docker commands and adapt them for your shell.
+- 🐳 **Docker volumes:** Data in `uploads/` and `html/` persists between restarts
 
 ---
 
