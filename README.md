@@ -18,15 +18,20 @@ git clone https://github.com/tlqtangok/jd_httpd.git
 cd jd_httpd
 
 # 2. Build and start the container
-docker build --no-cache -t jd-httpd:latest .
-docker run -d --name httpd-test -p 10248:80 \
+docker build --no-cache -t jd_httpd:latest .
+docker run -d \
+  -p 10248:80 \
+  -p 10247:443 \
   -v "$(pwd)/html:/usr/local/apache2/htdocs" \
   -v "$(pwd)/be:/usr/local/apache2/be" \
+  -v "$(pwd)/ssl:/usr/local/apache2/ssl" \
   -v "$(pwd)/uploads:/usr/local/apache2/uploads" \
-  jd-httpd:latest
+  --name jd_httpd_v0 \
+  jd_httpd:latest
 
 # 3. Open your browser
-# http://localhost:10248/
+# HTTP:  http://localhost:10248/
+# HTTPS: https://localhost:10247/
 ```
 
 That's it! You now have a running web server with Node.js and C++ backends.
@@ -90,36 +95,41 @@ cd jd_httpd
 
 ### Step 2: Build the Docker Image
 ```bash
-docker build --no-cache -t jd-httpd:latest .
+docker build --no-cache -t jd_httpd:latest .
 ```
 
 This takes 2-5 minutes on first build. It installs Apache, Node.js, C++ runtime, and all dependencies.
 
 ### Step 3: Start the Container
 ```bash
-docker run -d --name httpd-test -p 10248:80 \
+docker run -d \
+  -p 10248:80 \
+  -p 10247:443 \
   -v "$(pwd)/html:/usr/local/apache2/htdocs" \
   -v "$(pwd)/be:/usr/local/apache2/be" \
+  -v "$(pwd)/ssl:/usr/local/apache2/ssl" \
   -v "$(pwd)/uploads:/usr/local/apache2/uploads" \
-  jd-httpd:latest
+  --name jd_httpd_v0 \
+  jd_httpd:latest
 ```
 
 ### Step 4: Access Your Services
 
 Open your browser and visit:
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| 🏠 **Home** | http://localhost:10248/ | Directory listing |
-| 🔐 **Login** | http://localhost:10248/login.html | User authentication |
-| 📝 **Register** | http://localhost:10248/register.html | Create new account |
-| ✅ **Test Suite** | http://localhost:10248/httpd_be_test.html | Backend test forms |
-| 🚀 **C++ Server** | http://localhost:10248/cpp_srv/ | C++ CLI server interface |
-| 📁 **WebDAV** | http://localhost:10248/uploads/ | File storage (user: `jd`, pass: `pw`) |
+| Service | Protocol | URL | Description |
+|---------|----------|-----|-------------|
+| 🏠 **Home** | HTTP | http://localhost:10248/ | Directory listing |
+| 🏠 **Home** | HTTPS | https://localhost:10247/ | Directory listing (SSL) |
+| 🔐 **Login** | HTTP | http://localhost:10248/login.html | User authentication |
+| 📝 **Register** | HTTP | http://localhost:10248/register.html | Create new account |
+| ✅ **Test Suite** | HTTP | http://localhost:10248/httpd_be_test.html | Backend test forms |
+| 🚀 **C++ Server** | HTTP | http://localhost:10248/cpp_srv/ | C++ CLI server interface |
+| 📁 **WebDAV** | HTTP | http://localhost:10248/uploads/ | File storage (user: `jd`, pass: `pw`) |
 
 ### Step 5: Stop the Container
 ```bash
-docker stop httpd-test && docker rm httpd-test
+docker stop jd_httpd_v0 && docker rm jd_httpd_v0
 ```
 
 ## 🌐 All Working Pages
@@ -333,15 +343,19 @@ These files are **copied into the image** during build, so changes require rebui
 vim httpd.conf
 
 # 2. Rebuild the image
-docker build --no-cache -t jd-httpd:latest .
+docker build --no-cache -t jd_httpd:latest .
 
 # 3. Restart the container
-docker stop httpd-test && docker rm httpd-test
-docker run -d --name httpd-test -p 10248:80 \
+docker stop jd_httpd_v0 && docker rm jd_httpd_v0
+docker run -d \
+  -p 10248:80 \
+  -p 10247:443 \
   -v "$(pwd)/html:/usr/local/apache2/htdocs" \
   -v "$(pwd)/be:/usr/local/apache2/be" \
+  -v "$(pwd)/ssl:/usr/local/apache2/ssl" \
   -v "$(pwd)/uploads:/usr/local/apache2/uploads" \
-  jd-httpd:latest
+  --name jd_httpd_v0 \
+  jd_httpd:latest
 ```
 
 **When to rebuild:**
@@ -349,7 +363,7 @@ docker run -d --name httpd-test -p 10248:80 \
 - Changed CGI scripts (`cgi-bin/`)
 - Changed Dockerfile
 - Changed startup script (`start_servers.sh`)
-- Installed new Node.js packages (`be/package.json` - run `docker restart httpd-test` after npm install)
+- Installed new Node.js packages (`be/package.json` - run `docker restart jd_httpd_v0` after npm install)
 
 ## 📋 Architecture
 
@@ -433,13 +447,13 @@ A high-performance C++ backend service runs alongside the Node.js server for CPU
 **Monitoring:**
 ```bash
 # View logs
-docker exec httpd-test tail -f /usr/local/apache2/be/cpp_srv.log
+docker exec jd_httpd_v0 tail -f /usr/local/apache2/be/cpp_srv.log
 
 # Check if running
-docker exec httpd-test ps aux | grep cpp_srv
+docker exec jd_httpd_v0 ps aux | grep cpp_srv
 
 # Get PID
-docker exec httpd-test cat /usr/local/apache2/be/cpp_srv.pid
+docker exec jd_httpd_v0 cat /usr/local/apache2/be/cpp_srv.pid
 ```
 
 **Client Integration from Node.js:**
@@ -551,7 +565,7 @@ ls -la
 **Solution:**
 ```bash
 # Stop the running container
-docker stop httpd-test && docker rm httpd-test
+docker stop jd_httpd_v0 && docker rm jd_httpd_v0
 
 # Or find what's using the port
 sudo netstat -tulpn | grep :10248
@@ -564,14 +578,14 @@ sudo netstat -tulpn | grep :10248
 
 **Check if nodemon is running:**
 ```bash
-docker logs httpd-test | grep nodemon
+docker logs jd_httpd_v0 | grep nodemon
 
 # You should see: [nodemon] watching path(s): *.*
 ```
 
 **Force restart:**
 ```bash
-docker restart httpd-test
+docker restart jd_httpd_v0
 ```
 
 ---
@@ -580,7 +594,7 @@ docker restart httpd-test
 
 **Verify ProxyPass is configured:**
 ```bash
-docker exec httpd-test grep ProxyPassMatch /usr/local/apache2/conf/httpd.conf
+docker exec jd_httpd_v0 grep ProxyPassMatch /usr/local/apache2/conf/httpd.conf
 
 # Should output:
 # ProxyPassMatch ^/(get|post)/(.*)$ http://localhost:3000/$1/$2
@@ -588,7 +602,7 @@ docker exec httpd-test grep ProxyPassMatch /usr/local/apache2/conf/httpd.conf
 
 **Check backend is running:**
 ```bash
-docker exec httpd-test curl http://localhost:3000/post/login
+docker exec jd_httpd_v0 curl http://localhost:3000/post/login
 ```
 
 ---
@@ -600,7 +614,7 @@ docker exec httpd-test curl http://localhost:3000/post/login
 ls -la uploads/user_info.json
 
 # If missing, check volume mount:
-docker inspect httpd-test | grep -A 5 Mounts
+docker inspect jd_httpd_v0 | grep -A 5 Mounts
 ```
 
 ---
@@ -610,7 +624,7 @@ docker inspect httpd-test | grep -A 5 Mounts
 **Clear Docker cache and rebuild:**
 ```bash
 docker system prune -a
-docker build --no-cache -t jd-httpd:latest .
+docker build --no-cache -t jd_httpd:latest .
 ```
 
 ---
@@ -619,13 +633,13 @@ docker build --no-cache -t jd-httpd:latest .
 
 **Check if C++ server is running:**
 ```bash
-docker exec httpd-test ps aux | grep cpp_srv
+docker exec jd_httpd_v0 ps aux | grep cpp_srv
 
 # Check logs
-docker exec httpd-test tail -f /usr/local/apache2/be/cpp_srv.log
+docker exec jd_httpd_v0 tail -f /usr/local/apache2/be/cpp_srv.log
 
 # Get PID
-docker exec httpd-test cat /usr/local/apache2/be/cpp_srv.pid
+docker exec jd_httpd_v0 cat /usr/local/apache2/be/cpp_srv.pid
 ```
 
 ---
@@ -634,10 +648,10 @@ docker exec httpd-test cat /usr/local/apache2/be/cpp_srv.pid
 
 ```bash
 # Manually view logs
-docker logs httpd-test
+docker logs jd_httpd_v0
 
 # Follow logs in real-time
-docker logs -f httpd-test
+docker logs -f jd_httpd_v0
 ```
 
 ---
@@ -646,7 +660,7 @@ docker logs -f httpd-test
 
 ```bash
 # Access container shell
-docker exec -it httpd-test bash
+docker exec -it jd_httpd_v0 bash
 
 # Check running processes
 ps aux
@@ -666,7 +680,7 @@ cat /usr/local/apache2/conf/httpd.conf | grep Proxy
 - 🚀 **Add routes easily:** Just add to `server.js` - no config edits needed for `/get/*` or `/post/*`
 - 🔑 **Token expires fast:** Default is 60 seconds, change in `be/server.js` if needed
 - 📁 **WebDAV credentials:** Username `jd`, password `pw` (change in `httpd.conf`)
-- 🔍 **View logs:** Use `docker logs httpd-test` to debug issues
+- 🔍 **View logs:** Use `docker logs jd_httpd_v0` to debug issues
 - 📝 **Directory listing:** Enabled by default at http://localhost:10248/
 - 🐳 **Docker volumes:** Data in `uploads/` and `html/` persists between restarts
 
