@@ -27,7 +27,7 @@ RUN cd /usr/local/apache2/be && npm install
 RUN npm install -g nodemon
 
 RUN chmod +x /usr/local/apache2/cgi-bin/*.js && \
-    chmod +x /usr/local/apache2/start_servers.sh
+    chmod +x /usr/local/apache2/start_servers.sh /usr/local/apache2/be/cpp_cli_srv/build/cpp_srv /usr/local/apache2/be/cpp_cli_srv/build/cpp_cli
 
 # Create writable directories and files
 RUN chmod 777 /usr/local/apache2/htdocs && \

@@ -42,7 +42,7 @@ if [ $? == 0 ]; then  # Fixed condition check
     (
 	echo "now restart cpp_cli_srv ... "
 
-        cd "$t/cpp_cli_srv" && 
+        cd "$t/cpp_cli_srv" && chmod +x build/cpp_srv build/cpp_cli &&
         nohup ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd & > /dev/null 2>&1 &
     )
 fi
