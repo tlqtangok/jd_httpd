@@ -1,0 +1,33 @@
+# Logs
+logs/
+*.log
+
+# Uploads (user data)
+uploads/*
+!uploads/.gitkeep
+
+# SSL certificates (sensitive)
+ssl/*.key
+ssl/*.crt
+!ssl/README.md
+
+# User passwords
+user.passwd.*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Docker volumes
+.docker/
+
+# Tags
+tags

@@ -1,0 +1,2 @@
+# This directory stores user data and WebDAV uploads
+# Files in this directory are mounted as Docker volumes and not tracked by git

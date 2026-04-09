@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Test - ProxyPassReverse</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .info-box a {
+            text-decoration: none;
+        }
+        .info-box a:hover {
+            text-decoration: underline;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #ddd;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            padding: 12px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0b7dda;
+        }
+        #message, #messagePost {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Input Test - ProxyPassReverse</h1>
+        
+        <div class="info-box">
+            <strong>⚡ Using ProxyPassReverse</strong><br>
+            Requests are proxied to backend Node.js servers for better concurrency and scalability.
+            <br><br>
+            <a href="inputtest_cgi.html" style="color: #0066cc; font-weight: bold;">← Switch to CGI version</a>
+        </div>
+        
+        <!-- Form Data Submission -->
+        <h2>Form Data (application/x-www-form-urlencoded)</h2>
+        <form id="inputForm">
+            <label for="inputstr">Enter your string:</label>
+            <input type="text" id="inputstr" name="inputstr" required>
+            <button type="submit">Submit Form Data</button>
+        </form>
+        <div id="message"></div>
+        
+        <hr style="margin: 30px 0;">
+        
+        <!-- JSON POST Submission -->
+        <h2>JSON POST (application/json)</h2>
+        <form id="inputFormPost">
+            <label for="inputstr_post">Enter your string for POST:</label>
+            <input type="text" id="inputstr_post" name="inputstr_post" required>
+            <button type="submit">Submit as JSON POST</button>
+        </form>
+        <div id="messagePost"></div>
+    </div>
+
+    <script>
+        // Form Data Submission via ProxyPass
+        document.getElementById('inputForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const inputstr = document.getElementById('inputstr').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const response = await fetch('/post/uri', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'inputstr=' + encodeURIComponent(inputstr)
+                });
+                
+                const result = await response.text();
+                messageDiv.className = 'success';
+                messageDiv.textContent = '✅ ' + result;
+                messageDiv.style.display = 'block';
+                
+                // Clear form
+                document.getElementById('inputstr').value = '';
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = '❌ Error: ' + error.message;
+                messageDiv.style.display = 'block';
+            }
+        });
+        
+        // JSON POST Submission via ProxyPass
+        document.getElementById('inputFormPost').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const inputstr = document.getElementById('inputstr_post').value;
+            const messageDiv = document.getElementById('messagePost');
+            
+            try {
+                const response = await fetch('/post/json', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ inputstr: inputstr })
+                });
+                
+                const result = await response.text();
+                messageDiv.className = 'success';
+                messageDiv.textContent = '✅ ' + result;
+                messageDiv.style.display = 'block';
+                
+                // Clear form
+                document.getElementById('inputstr_post').value = '';
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = '❌ Error: ' + error.message;
+                messageDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

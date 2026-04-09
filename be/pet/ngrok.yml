@@ -1,0 +1,12 @@
+server_addr: jesson.tech:10200
+trust_host_root_certs: false
+tunnels:
+  ssh:
+    remote_port: 10215
+    proto:
+      tcp: "22"  
+  http:
+    hostname: "jesson.tech:10209"
+    subdomain: ""
+    proto:
+      http: 3000

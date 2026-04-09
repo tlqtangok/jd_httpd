@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 400px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .user-info {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .timer {
+            margin: 20px 0;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .warning {
+            color: #c33;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello!</h1>
+        <div class="user-info">
+            <p>Welcome, <strong id="username">User</strong>!</p>
+            <p>You are successfully logged in.</p>
+        </div>
+        <div class="timer">
+            Session expires in: <span id="countdown">60</span>s
+        </div>
+        <p class="warning">Your token will expire after 1 minute</p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        async function verifyToken() {
+            try {
+                const response = await fetch('/get/verify', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('username').textContent = data.username;
+                } else {
+                    alert('Session expired. Please login again.');
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Verification failed:', error);
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+        let timeLeft = 60;
+        const countdownElement = document.getElementById('countdown');
+        
+        const countdownTimer = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdownTimer);
+                alert('Session expired. Please login again.');
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            }
+        }, 1000);
+
+        verifyToken();
+    </script>
+</body>
+</html>

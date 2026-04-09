@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐾 欢乐宠物养成乐园</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="container">
+        <header class="header">
+            <h1>🎈 欢乐宠物养成乐园 🎈</h1>
+            <p class="subtitle">和可爱的小动物一起成长吧！</p>
+        </header>
+
+        <!-- 主界面 -->
+        <div id="mainView" class="main-view">
+            <div class="cards-container">
+                <!-- 认领卡片 -->
+                <div class="card rainbow-border" onclick="showRegisterForm()">
+                    <div class="card-icon">🎁</div>
+                    <h2>认领宠物</h2>
+                    <p>点击认领你的专属小伙伴</p>
+                </div>
+
+                <!-- 查看宠物状态 -->
+                <div class="card rainbow-border" onclick="showPetList()">
+                    <div class="card-icon">🐾</div>
+                    <h2>我的宠物</h2>
+                    <p>查看和照顾你的宠物</p>
+                </div>
+
+                <!-- 积分商城 -->
+                <div class="card rainbow-border" onclick="showShopSelection()">
+                    <div class="card-icon">🏪</div>
+                    <h2>积分商城</h2>
+                    <p>用积分兑换好东西</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 注册表单 -->
+        <div id="registerView" class="view hidden">
+            <button class="back-btn" onclick="showMain()">⬅️ 返回</button>
+            <div class="form-container">
+                <h2>🎉 认领你的宠物</h2>
+                <form id="registerForm" onsubmit="registerChild(event)">
+                    <div class="form-group">
+                        <label>👦 小朋友名字</label>
+                        <input type="text" id="childName" required placeholder="请输入名字">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🔑 账户名（唯一）</label>
+                        <input type="text" id="childAccount" required placeholder="请输入账户名">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>📷 上传头像</label>
+                        <input type="file" id="avatar" accept="image/*">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>🐾 选择你的宠物</label>
+                        <div class="pet-selection">
+                            <label class="pet-option">
+                                <input type="radio" name="petType" value="snake" required>
+                                <div class="pet-card">
+                                    <div class="pet-emoji">🥚➡️🐍</div>
+                                    <h3>小青蛇</h3>
+                                    <p>从蛇蛋开始成长</p>
+                                </div>
+                            </label>
+                            <label class="pet-option">
+                                <input type="radio" name="petType" value="horse" required>
+                                <div class="pet-card">
+                                    <div class="pet-emoji">🤰➡️🐴</div>
+                                    <h3>小白马</h3>
+                                    <p>从胚胎开始孕育</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">✨ 开始养成</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 宠物列表 -->
+        <div id="petListView" class="view hidden">
+            <button class="back-btn" onclick="showMain()">⬅️ 返回</button>
+            <h2>🐾 宠物列表</h2>
+            <div id="petList" class="pet-list"></div>
+        </div>
+
+        <!-- 宠物详情 -->
+        <div id="petDetailView" class="view hidden">
+            <button class="back-btn" onclick="showPetList()">⬅️ 返回</button>
+            <div id="petDetail" class="pet-detail-container"></div>
+        </div>
+
+        <!-- 商城 -->
+        <div id="shopView" class="view hidden">
+            <button class="back-btn" onclick="showMain()">⬅️ 返回</button>
+            <div id="shopContent" class="shop-container">
+                <!-- 动态加载商城内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

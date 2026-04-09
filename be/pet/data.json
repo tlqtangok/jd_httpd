@@ -1,0 +1,34 @@
+{
+  "children": [
+    {
+      "name": "唐珞希",
+      "account": "gg",
+      "avatar": "/uploads/1774101731197-gg_head.png",
+      "points": 0,
+      "pet": {
+        "type": "snake",
+        "stage": "baby",
+        "weight": 10,
+        "food": 10,
+        "hatched": true,
+        "lastFeedTime": 1774265891838
+      },
+      "createdAt": 1774101731213
+    },
+    {
+      "name": "唐珞心",
+      "account": "jj",
+      "avatar": "/uploads/1774101843426-jj_head.png",
+      "points": 7,
+      "pet": {
+        "type": "horse",
+        "stage": "foal",
+        "weight": 10,
+        "food": 0,
+        "hatched": true,
+        "lastFeedTime": 1774266004420
+      },
+      "createdAt": 1774101843442
+    }
+  ]
+}

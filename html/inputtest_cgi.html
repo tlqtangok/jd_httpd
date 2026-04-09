@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Test Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #ddd;
+        }
+        .info-box a {
+            text-decoration: none;
+        }
+        .info-box a:hover {
+            text-decoration: underline;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Input Test Form - CGI Version</h1>
+        
+        <div class="info-box" style="background-color: #fff3cd; border-left: 4px solid #ffc107;">
+            <strong>🔧 CGI Mode</strong><br>
+            Using traditional CGI scripts. For better concurrency, try <a href="inputtest_proxypass_reverse.html" style="color: #0066cc; font-weight: bold;">ProxyPass version</a>.
+        </div>
+        
+        <!-- Form Data Submission -->
+        <h2>Form Data (application/x-www-form-urlencoded)</h2>
+        <form id="inputForm">
+            <label for="inputstr">Enter your string:</label>
+            <input type="text" id="inputstr" name="inputstr" required>
+            <button type="submit">Submit Form Data</button>
+        </form>
+        <div id="message"></div>
+        
+        <hr style="margin: 30px 0;">
+        
+        <!-- JSON POST Submission -->
+        <h2>JSON POST (application/json)</h2>
+        <form id="inputFormPost">
+            <label for="inputstr_post">Enter your string for POST:</label>
+            <input type="text" id="inputstr_post" name="inputstr_post" required>
+            <button type="submit">Submit as JSON POST</button>
+        </form>
+        <div id="messagePost"></div>
+    </div>
+
+    <script>
+        // Form Data Submission (original)
+        document.getElementById('inputForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const inputstr = document.getElementById('inputstr').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const response = await fetch('/cgi-bin/cgi.js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'inputstr=' + encodeURIComponent(inputstr)
+                });
+                
+                const result = await response.text();
+                messageDiv.className = 'success';
+                messageDiv.textContent = 'Success! ' + result;
+                messageDiv.style.display = 'block';
+                
+                // Clear form
+                document.getElementById('inputstr').value = '';
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Error: ' + error.message;
+                messageDiv.style.display = 'block';
+            }
+        });
+        
+        // JSON POST Submission (new)
+        document.getElementById('inputFormPost').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const inputstr = document.getElementById('inputstr_post').value;
+            const messageDiv = document.getElementById('messagePost');
+            
+            try {
+                const response = await fetch('/cgi-bin/cgi.js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ inputstr: inputstr })
+                });
+                
+                const result = await response.text();
+                messageDiv.className = 'success';
+                messageDiv.textContent = 'Success! ' + result;
+                messageDiv.style.display = 'block';
+                
+                // Clear form
+                document.getElementById('inputstr_post').value = '';
+            } catch (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Error: ' + error.message;
+                messageDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

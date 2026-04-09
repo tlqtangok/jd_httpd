@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>CLI-SRV GUI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+  header { padding: 20px 32px; border-bottom: 1px solid #2d3748; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.3rem; color: #63b3ed; }
+  .container { display: flex; height: calc(100vh - 65px); }
+  .sidebar { width: 220px; border-right: 1px solid #2d3748; padding: 16px; overflow-y: auto; }
+  .sidebar h3 { font-size: .75rem; text-transform: uppercase; color: #718096; margin-bottom: 10px; letter-spacing: 1px; }
+  .cmd-btn { display: block; width: 100%; text-align: left; padding: 8px 12px; margin-bottom: 6px;
+    background: #1a202c; border: 1px solid #2d3748; border-radius: 6px; color: #e2e8f0;
+    cursor: pointer; font-size: .9rem; transition: background .15s; }
+  .cmd-btn:hover, .cmd-btn.active { background: #2b6cb0; border-color: #63b3ed; }
+  .main { flex: 1; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; overflow: auto; }
+  label { font-size: .8rem; color: #a0aec0; margin-bottom: 4px; display: block; }
+  textarea, input[type=text] {
+    width: 100%; padding: 10px 14px; background: #1a202c; border: 1px solid #2d3748;
+    border-radius: 6px; color: #e2e8f0; font-family: 'Consolas', monospace; font-size: .9rem;
+    resize: vertical; outline: none; transition: border .15s; }
+  textarea:focus, input:focus { border-color: #63b3ed; }
+  .row { display: flex; gap: 12px; align-items: flex-end; }
+  button#runBtn {
+    padding: 10px 28px; background: #2b6cb0; border: none; border-radius: 6px;
+    color: #fff; font-size: .95rem; cursor: pointer; transition: background .15s; white-space: nowrap; }
+  button#runBtn:hover { background: #2c5282; }
+  .result-box { flex: 1; background: #1a202c; border: 1px solid #2d3748; border-radius: 8px;
+    padding: 14px; font-family: 'Consolas', monospace; font-size: .85rem; white-space: pre-wrap;
+    overflow: auto; color: #68d391; min-height: 180px; }
+  .result-box.err { color: #fc8181; }
+  .curl-box { background: #1a202c; border: 1px solid #2d3748; border-radius: 8px;
+    padding: 12px 14px; font-family: 'Consolas', monospace; font-size: .8rem; 
+    overflow-x: auto; color: #a0aec0; white-space: pre-wrap; word-break: break-all; }
+  .curl-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .copy-btn { padding: 4px 12px; background: #2d3748; border: none; border-radius: 4px;
+    color: #a0aec0; font-size: .75rem; cursor: pointer; transition: background .15s; }
+  .copy-btn:hover { background: #4a5568; color: #e2e8f0; }
+  .os-toggle { display: flex; gap: 4px; }
+  .os-btn { padding: 4px 12px; background: #1a202c; border: 1px solid #2d3748; border-radius: 4px;
+    color: #a0aec0; font-size: .75rem; cursor: pointer; transition: all .15s; }
+  .os-btn.active { background: #2b6cb0; border-color: #63b3ed; color: #fff; }
+  .os-btn:hover:not(.active) { background: #2d3748; }
+  .tag { font-size: .7rem; padding: 2px 7px; border-radius: 10px; background: #2d3748; color: #a0aec0; }
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.4rem">⚡</span>
+  <h1>CLI-SRV Web GUI</h1>
+  <span class="tag" id="statusTag">connecting...</span>
+</header>
+<div class="container">
+  <div class="sidebar">
+    <h3>Commands</h3>
+    <div id="cmdList">loading...</div>
+  </div>
+  <div class="main">
+    <div>
+      <label>Command</label>
+      <input type="text" id="cmdInput" placeholder="e.g. echo" oninput="updateCurl()" />
+    </div>
+    <div>
+      <label>Args (JSON) <span style="color:#718096;font-size:.75rem">(token auto-filled from last success for debugging)</span></label>
+      <textarea id="argsInput" rows="8" placeholder='{"text": "hello"}' oninput="updateCurl()"></textarea>
+    </div>
+    <div>
+      <div class="curl-label">
+        <label>Equivalent curl command</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="os-toggle">
+            <button class="os-btn active" id="linuxBtn" onclick="switchOS('linux')">🐧 Linux</button>
+            <button class="os-btn" id="windowsBtn" onclick="switchOS('windows')">🪟 Windows</button>
+          </div>
+          <button class="copy-btn" onclick="copyCurl()">📋 Copy</button>
+        </div>
+      </div>
+      <div class="curl-box" id="curlBox">—</div>
+    </div>
+    <div class="row">
+      <button id="runBtn" onclick="runCmd()">▶ Run</button>
+      <label style="color:#718096;font-size:.8rem">Ctrl+Enter to run</label>
+    </div>
+    <label>Result</label>
+    <div class="result-box" id="result">— waiting —</div>
+  </div>
+</div>
+<script>
+// Derive API prefix from the current page path so the GUI works correctly
+// whether served at the root ("/") or behind a ProxyPassReverse sub-path
+// e.g. http://host:port/cpp_cli_srv  → API = '/cpp_cli_srv'
+//      http://host:port/cpp_cli_srv/ → API = '/cpp_cli_srv'
+//      http://host:port/             → API = ''
+const API = window.location.pathname.replace(/\/+$/, ''); // Remove trailing slashes
+
+// Curl OS preference (default: linux)
+let curlOS = localStorage.getItem('curl_os') || 'linux';
+
+// Token cache for debugging convenience
+// Saved to localStorage when a command succeeds with valid token
+const TOKEN_CACHE_KEY = 'debug_token';
+const AUTHENTICATED_COMMANDS = ['call_shell', 'get_global_json', 'set_global_json', 'patch_global_json'];
+const CONFIG_CACHE_KEY = 'cli_srv_config';
+
+// Command enable/disable status from server config
+let commandConfig = {};
+
+function getCachedToken() {
+  return localStorage.getItem(TOKEN_CACHE_KEY) || '';
+}
+
+function saveToken(token) {
+  if (token && token.trim()) {
+    localStorage.setItem(TOKEN_CACHE_KEY, token);
+  }
+}
+
+// Load config from server and initialize command enable/disable status
+async function loadConfig() {
+  let token = getCachedToken();
+  
+  // Get token if not available
+  if (!token) {
+    token = prompt('Please enter token to access the server:');
+    if (!token) {
+      console.warn('No token provided, GUI will work without config enforcement');
+      // Still initialize GUI without config
+      commandConfig = {};
+      return true;
+    }
+    localStorage.setItem(TOKEN_CACHE_KEY, token);
+  }
+  
+  try {
+    // Try to fetch config from /cpp_cli_srv_config
+    const r = await fetch(API + '/post/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cmd: 'get_global_json',
+        args: { path: '/cpp_cli_srv_config', token: token }
+      })
+    });
+    
+    const data = await r.json();
+    
+    if (data.code === 0 && data.output && typeof data.output === 'object') {
+      // Config exists, use it
+      commandConfig = data.output;
+      console.log('Loaded config from server:', commandConfig);
+      return true;
+    } else if (data.code === 6) {
+      // Token error - clear it and retry
+      localStorage.removeItem(TOKEN_CACHE_KEY);
+      const newToken = prompt('Invalid or expired token. Please enter token:');
+      if (!newToken) {
+        console.warn('Invalid token, GUI will work without config enforcement');
+        commandConfig = {};
+        return true;
+      }
+      localStorage.setItem(TOKEN_CACHE_KEY, newToken);
+      // Retry with new token
+      return loadConfig();
+    } else {
+      // Config doesn't exist, create default
+      console.log('Config not found, creating default...');
+      return createDefaultConfig(token);
+    }
+  } catch (e) {
+    console.error('Error loading config:', e);
+    // Network error or config not found - create default
+    return createDefaultConfig(token);
+  }
+}
+
+// Create default config (all commands enabled except set_global_json)
+async function createDefaultConfig(token) {
+  if (!token) {
+    console.warn('No token available, using empty config');
+    commandConfig = {};
+    return true;
+  }
+  
+  try {
+    // First get schema to know all available commands
+    const schemaR = await fetch(API + '/get/schema');
+    const commands = await schemaR.json();
+    
+    // Create config with all commands enabled except set_global_json (disabled for safety)
+    const defaultConfig = {};
+    commands.forEach(c => {
+      defaultConfig[c.name] = (c.name !== 'set_global_json');
+    });
+    
+    commandConfig = defaultConfig;
+    
+    // Save config to server using patch_global_json (no token required)
+    const r = await fetch(API + '/post/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cmd: 'patch_global_json',
+        args: { cpp_cli_srv_config: defaultConfig }
+      })
+    });
+    
+    const data = await r.json();
+    if (data.code === 0) {
+      console.log('Default config created and saved:', defaultConfig);
+      return true;
+    } else {
+      console.warn('Failed to save config:', data.error);
+      // Still allow GUI to work with client-side config
+      return true;
+    }
+  } catch (e) {
+    console.error('Error creating default config:', e);
+    // Allow GUI to work anyway - will load schema normally
+    return true;
+  }
+}
+
+// Generate timestamp in format: %Y%m%d_%H%M%S (e.g., 20260403_091605)
+function getTimestamp() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+}
+
+async function loadSchema() {
+  try {
+    const r = await fetch(API + '/get/schema');
+    const cmds = await r.json();
+    const list = document.getElementById('cmdList');
+    list.innerHTML = '';
+    document.getElementById('statusTag').textContent = 'connected';
+    document.getElementById('statusTag').style.background = '#276749';
+    cmds.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'cmd-btn';
+      btn.title = c.desc;
+      btn.textContent = c.name;
+      btn.onclick = () => fillCmd(c);
+      list.appendChild(btn);
+    });
+  } catch(e) {
+    document.getElementById('statusTag').textContent = 'offline';
+    document.getElementById('statusTag').style.background = '#742a2a';
+  }
+}
+
+async function initializeGUI() {
+  // Load config first before showing GUI
+  const configLoaded = await loadConfig();
+  if (!configLoaded) {
+    console.error('Failed to initialize config, but continuing anyway');
+  }
+  
+  // Then load schema
+  await loadSchema();
+}
+
+function fillCmd(c) {
+  document.getElementById('cmdInput').value = c.name;
+  const sample = {};
+  
+  c.args.forEach(a => {
+    sample[a.name] = ('default' in a) ? a.default : (a.required ? `<${a.name}>` : '');
+  });
+  
+  // Special demo for patch_global_json
+  if (c.name === 'patch_global_json') {
+    const timestamp = getTimestamp();
+    sample.patch_key = `val_${timestamp}`;
+  }
+  
+  // Auto-fill cached token for authenticated commands (debugging convenience)
+  if (AUTHENTICATED_COMMANDS.includes(c.name)) {
+    const cachedToken = getCachedToken();
+    if (cachedToken && sample.hasOwnProperty('token')) {
+      sample.token = cachedToken;
+    }
+  }
+  
+  document.getElementById('argsInput').value = JSON.stringify(sample, null, 2);
+  document.querySelectorAll('.cmd-btn').forEach(b => b.classList.toggle('active', b.textContent === c.name));
+  
+  // Update Run button state based on config
+  const runBtn = document.getElementById('runBtn');
+  const isEnabled = commandConfig[c.name] !== false;
+  runBtn.disabled = !isEnabled;
+  if (!isEnabled) {
+    runBtn.title = `Command "${c.name}" is disabled in server configuration`;
+    runBtn.style.opacity = '0.5';
+    runBtn.style.cursor = 'not-allowed';
+  } else {
+    runBtn.title = '';
+    runBtn.style.opacity = '1';
+    runBtn.style.cursor = 'pointer';
+  }
+  
+  updateCurl();
+}
+
+function switchOS(os) {
+  curlOS = os;
+  localStorage.setItem('curl_os', os);
+  
+  // Update button states
+  document.getElementById('linuxBtn').classList.toggle('active', os === 'linux');
+  document.getElementById('windowsBtn').classList.toggle('active', os === 'windows');
+  
+  // Regenerate curl command
+  updateCurl();
+}
+
+function updateCurl() {
+  const cmd = document.getElementById('cmdInput').value.trim();
+  const args = document.getElementById('argsInput').value.trim();
+  const curlBox = document.getElementById('curlBox');
+  
+  if (!cmd) {
+    curlBox.textContent = '—';
+    return;
+  }
+  
+  // Get base URL (window.location.origin gives the current host)
+  const baseUrl = window.location.origin + API;
+  
+  // Determine if HTTPS and add -k flag if needed
+  const isHttps = baseUrl.startsWith('https://');
+  const curlFlags = isHttps ? '-k ' : '';
+  
+  // Build the JSON body
+  let jsonBody = { cmd };
+  if (args) {
+    try {
+      const argsObj = JSON.parse(args);
+      jsonBody.args = argsObj;
+    } catch(e) {
+      // Invalid JSON, show it anyway for debugging
+      jsonBody.args = {};
+    }
+  } else {
+    jsonBody.args = {};
+  }
+  
+  // Generate curl command based on OS
+  let curlCmd;
+  if (curlOS === 'windows') {
+    // Windows: use double quotes and escape them
+    const jsonStr = JSON.stringify(jsonBody).replace(/"/g, '\\"');
+    curlCmd = `curl ${curlFlags}-X POST ${baseUrl}/post/run -H "Content-Type: application/json" -d "${jsonStr}"`;
+  } else {
+    // Linux: use single quotes for both header and data - no escaping needed!
+    const jsonStr = JSON.stringify(jsonBody);
+    curlCmd = `curl ${curlFlags}-X POST ${baseUrl}/post/run -H 'Content-Type: application/json' -d '${jsonStr}'`;
+  }
+  
+  curlBox.textContent = curlCmd;
+}
+
+function copyCurl() {
+  const curlBox = document.getElementById('curlBox');
+  const text = curlBox.textContent;
+  const btn = event.target;
+  const originalText = btn.textContent;
+  
+  if (text === '—') {
+    // Show feedback for empty command
+    btn.textContent = '⚠ Empty';
+    btn.style.background = '#744210';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = '';
+    }, 2000);
+    return;
+  }
+  
+  // Try modern clipboard API first
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied';
+      btn.style.background = '#276749';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '';
+      }, 2000);
+    }).catch(err => {
+      // If clipboard API fails, use fallback
+      fallbackCopy(text, btn, originalText);
+    });
+  } else {
+    // Use fallback for older browsers
+    fallbackCopy(text, btn, originalText);
+  }
+}
+
+function fallbackCopy(text, btn, originalText) {
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    
+    if (success) {
+      btn.textContent = '✓ Copied';
+      btn.style.background = '#276749';
+    } else {
+      btn.textContent = '✗ Failed';
+      btn.style.background = '#742a2a';
+    }
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = '';
+    }, 2000);
+  } catch (err) {
+    btn.textContent = '✗ Error';
+    btn.style.background = '#742a2a';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = '';
+    }, 2000);
+  }
+}
+
+async function runCmd() {
+  const cmd  = document.getElementById('cmdInput').value.trim();
+  const args_raw = document.getElementById('argsInput').value.trim();
+  const box  = document.getElementById('result');
+  if (!cmd) { box.textContent = 'please enter a command'; return; }
+  
+  // Check if command is disabled in config
+  if (commandConfig[cmd] === false) {
+    box.className = 'result-box err';
+    box.textContent = `Error: Command "${cmd}" is disabled in server configuration`;
+    return;
+  }
+  
+  let args = {};
+  if (args_raw) {
+    try { args = JSON.parse(args_raw); }
+    catch { box.className = 'result-box err'; box.textContent = 'invalid JSON in args'; return; }
+  }
+
+  // User must provide token manually for authenticated commands
+  // No auto-injection for security reasons
+  let body = { cmd, args };
+
+  try {
+    const r = await fetch(API + '/post/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    
+    // Handle new JSON format: check "code" instead of "ok"
+    const isSuccess = data.code === 0;
+    box.className = 'result-box' + (isSuccess ? '' : ' err');
+    box.textContent = JSON.stringify(data, null, 2);
+    
+    // Save token to localStorage when authenticated command succeeds
+    // This enables auto-fill for debugging convenience
+    if (isSuccess && AUTHENTICATED_COMMANDS.includes(cmd) && args.token) {
+      saveToken(args.token);
+    }
+  } catch(e) {
+    box.className = 'result-box err';
+    box.textContent = 'fetch error: ' + e.message;
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') runCmd();
+});
+
+// Initialize OS button states on load
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('linuxBtn').classList.toggle('active', curlOS === 'linux');
+  document.getElementById('windowsBtn').classList.toggle('active', curlOS === 'windows');
+});
+
+// Load config and schema on page load
+initializeGUI();
+</script>
+</body>
+</html>

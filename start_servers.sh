@@ -1,0 +1,30 @@
+#!/bin/bash
+
+echo "Starting unified backend server with auto-reload..."
+
+# Ensure correct permissions on startup (in case of volume mounts)
+chmod 777 /usr/local/apache2/htdocs 2>/dev/null || true
+touch /usr/local/apache2/htdocs/inputstr.txt 2>/dev/null || true
+touch /usr/local/apache2/htdocs/inputstr_post.txt 2>/dev/null || true
+chmod 666 /usr/local/apache2/htdocs/inputstr.txt 2>/dev/null || true
+chmod 666 /usr/local/apache2/htdocs/inputstr_post.txt 2>/dev/null || true
+chmod 777 /usr/local/apache2/var 2>/dev/null || true
+chmod 777 /usr/local/apache2/uploads 2>/dev/null || true
+mkdir -p /usr/local/apache2/dat 2>/dev/null || true
+chmod 777 /usr/local/apache2/dat 2>/dev/null || true
+
+# Check SSL certificates exist (volume mount or built-in)
+if [ ! -f /usr/local/apache2/ssl/server.crt ] || [ ! -f /usr/local/apache2/ssl/server.key ]; then
+    echo "ERROR: SSL certificates not found!"
+    echo "Please ensure ssl/server.crt and ssl/server.key exist"
+    exit 1
+fi
+
+# Start unified backend server with nodemon (use polling for Windows volumes)
+nodemon --watch /usr/local/apache2/be --legacy-watch /usr/local/apache2/be/server.js &
+BACKEND_PID=$!
+echo "Unified backend server started with PID: $BACKEND_PID (auto-reload enabled)"
+
+# Start Apache httpd in foreground
+echo "Starting Apache httpd..."
+exec httpd-foreground

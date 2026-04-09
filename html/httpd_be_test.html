@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTPD Backend Test - All Methods</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-section.cgi {
+            border-left-color: #ffc107;
+        }
+        .test-section.proxy {
+            border-left-color: #2196F3;
+        }
+        h2 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge.cgi {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .badge.proxy {
+            background-color: #2196F3;
+            color: #fff;
+        }
+        .badge.form {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .badge.json {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+            word-wrap: break-word;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .endpoint-info {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message.show {
+            animation: fadeIn 0.3s ease-in;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 HTTPD Backend Test Suite</h1>
+        <p class="subtitle">Test all CGI and ProxyPass endpoints in one place</p>
+        
+        <div class="info-box">
+            <strong>📊 Testing Matrix:</strong> This page tests all 6 backend methods simultaneously.
+            Each submission is independent and saves to its respective file.
+        </div>
+
+        <!-- CGI Form Data -->
+        <div class="test-section cgi">
+            <h2>
+                <span>1. CGI Form Data</span>
+                <span class="badge cgi">CGI</span>
+                <span class="badge form">FORM</span>
+            </h2>
+            <div class="endpoint-info">POST /cgi-bin/cgi.js (form) → inputstr.txt</div>
+            <form id="form1">
+                <input type="text" id="input1" placeholder="Enter text for CGI form submission..." required>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="msg1" class="message"></div>
+        </div>
+
+        <!-- CGI JSON POST -->
+        <div class="test-section cgi">
+            <h2>
+                <span>2. CGI JSON POST</span>
+                <span class="badge cgi">CGI</span>
+                <span class="badge json">JSON</span>
+            </h2>
+            <div class="endpoint-info">POST /cgi-bin/cgi.js (JSON) → inputstr_post.txt</div>
+            <form id="form2">
+                <input type="text" id="input2" placeholder="Enter text for CGI JSON submission..." required>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="msg2" class="message"></div>
+        </div>
+
+        <!-- ProxyPass Form Data -->
+        <div class="test-section proxy">
+            <h2>
+                <span>3. ProxyPass Form Data</span>
+                <span class="badge proxy">PROXY</span>
+                <span class="badge form">FORM</span>
+            </h2>
+            <div class="endpoint-info">POST /post/uri → Node.js:3000 → inputstr.txt</div>
+            <form id="form3">
+                <input type="text" id="input3" placeholder="Enter text for ProxyPass form submission..." required>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="msg3" class="message"></div>
+        </div>
+
+        <!-- ProxyPass JSON POST -->
+        <div class="test-section proxy">
+            <h2>
+                <span>4. ProxyPass JSON POST</span>
+                <span class="badge proxy">PROXY</span>
+                <span class="badge json">JSON</span>
+            </h2>
+            <div class="endpoint-info">POST /post/json → Node.js:3000 → inputstr_post.txt</div>
+            <form id="form4">
+                <input type="text" id="input4" placeholder="Enter text for ProxyPass JSON submission..." required>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="msg4" class="message"></div>
+        </div>
+
+        <!-- CGI GET -->
+        <div class="test-section cgi">
+            <h2>
+                <span>5. CGI GET Query</span>
+                <span class="badge cgi">CGI</span>
+                <span class="badge" style="background-color: #17a2b8; color: #fff;">GET</span>
+            </h2>
+            <div class="endpoint-info">GET /cgi-bin/cgi.js?inputstr=value → inputstr.txt</div>
+            <form id="form5">
+                <input type="text" id="input5" placeholder="Enter text for CGI GET query..." required>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="msg5" class="message"></div>
+        </div>
+
+        <!-- ProxyPass GET -->
+        <div class="test-section proxy">
+            <h2>
+                <span>6. ProxyPass GET Query</span>
+                <span class="badge proxy">PROXY</span>
+                <span class="badge" style="background-color: #17a2b8; color: #fff;">GET</span>
+            </h2>
+            <div class="endpoint-info">GET /get/param?inputstr=value → Node.js:3000 → inputstr.txt</div>
+            <form id="form6">
+                <input type="text" id="input6" placeholder="Enter text for ProxyPass GET query..." required>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="msg6" class="message"></div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="cgiCount">0</div>
+                <div class="stat-label">CGI Requests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="proxyCount">0</div>
+                <div class="stat-label">ProxyPass Requests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Statistics counters
+        let cgiCount = 0;
+        let proxyCount = 0;
+
+        function updateStats() {
+            document.getElementById('cgiCount').textContent = cgiCount;
+            document.getElementById('proxyCount').textContent = proxyCount;
+            document.getElementById('totalCount').textContent = cgiCount + proxyCount;
+        }
+
+        function showMessage(msgId, text, isSuccess) {
+            const msgDiv = document.getElementById(msgId);
+            msgDiv.className = isSuccess ? 'message success show' : 'message error show';
+            msgDiv.textContent = (isSuccess ? '✅ ' : '❌ ') + text;
+            msgDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                msgDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Form 1: CGI Form Data
+        document.getElementById('form1').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('input1').value;
+            
+            try {
+                const response = await fetch('/cgi-bin/cgi.js', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'inputstr=' + encodeURIComponent(input)
+                });
+                
+                const result = await response.text();
+                showMessage('msg1', result, true);
+                document.getElementById('input1').value = '';
+                cgiCount++;
+                updateStats();
+            } catch (error) {
+                showMessage('msg1', 'Error: ' + error.message, false);
+            }
+        });
+
+        // Form 2: CGI JSON POST
+        document.getElementById('form2').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('input2').value;
+            
+            try {
+                const response = await fetch('/cgi-bin/cgi.js', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inputstr: input })
+                });
+                
+                const result = await response.text();
+                showMessage('msg2', result, true);
+                document.getElementById('input2').value = '';
+                cgiCount++;
+                updateStats();
+            } catch (error) {
+                showMessage('msg2', 'Error: ' + error.message, false);
+            }
+        });
+
+        // Form 3: ProxyPass Form Data
+        document.getElementById('form3').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('input3').value;
+            
+            try {
+                const response = await fetch('/post/uri', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'inputstr=' + encodeURIComponent(input)
+                });
+                
+                const result = await response.text();
+                showMessage('msg3', result, true);
+                document.getElementById('input3').value = '';
+                proxyCount++;
+                updateStats();
+            } catch (error) {
+                showMessage('msg3', 'Error: ' + error.message, false);
+            }
+        });
+
+        // Form 4: ProxyPass JSON POST
+        document.getElementById('form4').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('input4').value;
+            
+            try {
+                const response = await fetch('/post/json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inputstr: input })
+                });
+                
+                const result = await response.text();
+                showMessage('msg4', result, true);
+                document.getElementById('input4').value = '';
+                proxyCount++;
+                updateStats();
+            } catch (error) {
+                showMessage('msg4', 'Error: ' + error.message, false);
+            }
+        });
+
+        // Form 5: CGI GET Query
+        document.getElementById('form5').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('input5').value;
+            
+            try {
+                const response = await fetch('/cgi-bin/cgi.js?inputstr=' + encodeURIComponent(input), {
+                    method: 'GET'
+                });
+                
+                const result = await response.text();
+                showMessage('msg5', result, true);
+                document.getElementById('input5').value = '';
+                cgiCount++;
+                updateStats();
+            } catch (error) {
+                showMessage('msg5', 'Error: ' + error.message, false);
+            }
+        });
+
+        // Form 6: ProxyPass GET Query
+        document.getElementById('form6').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('input6').value;
+            
+            try {
+                const response = await fetch('/get/param?inputstr=' + encodeURIComponent(input), {
+                    method: 'GET'
+                });
+                
+                const result = await response.text();
+                showMessage('msg6', result, true);
+                document.getElementById('input6').value = '';
+                proxyCount++;
+                updateStats();
+            } catch (error) {
+                showMessage('msg6', 'Error: ' + error.message, false);
+            }
+        });
+
+        // Initialize stats
+        updateStats();
+    </script>
+</body>
+</html>

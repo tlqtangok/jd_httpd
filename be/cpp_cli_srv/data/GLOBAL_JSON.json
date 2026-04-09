@@ -1,0 +1,13 @@
+{
+  "1": 1,
+  "2": 2,
+  "cpp_cli_srv_config": {
+    "set_global_json": false
+  },
+  "on_sale": true,
+  "patch_key": "val_20260409_114253",
+  "price": 99.99,
+  "product": "Widget",
+  "stock": 95,
+  "test": "val_20260407_152539"
+}
