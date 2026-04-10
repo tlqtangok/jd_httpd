@@ -4,6 +4,7 @@ set -x
 
 export perl_p="/root/jd/t/perl_p"  # Define this or remove if not needed
 cd `dirname \`readlink -f $0\``
+cd ..
 
 # ROOT=/usr/local/apache2/be/cpp_cli_srv
 # ROOT=/root/jd/t/cpp_cli_srv
