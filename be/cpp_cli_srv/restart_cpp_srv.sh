@@ -3,12 +3,26 @@ set -x
 
 
 export perl_p="/root/jd/t/perl_p"  # Define this or remove if not needed
-export t=/root/jd/t
-#export BASE_URL="http://localhost:10220/post/run"  # Removed duplicate /post/run
-export BASE_URL="http://localhost:3001/post/run"  # Removed duplicate /post/run
+cd `dirname \`readlink -f $0\``
+
+# ROOT=/usr/local/apache2/be/cpp_cli_srv
+# ROOT=/root/jd/t/cpp_cli_srv
+
+export t=`pwd`
+
+
+export BASE_URL="http://localhost:10220/post/run"  # Removed duplicate /post/run
+
+echo $t |grep apache2
+export flag_httpd=$?
+if [ $flag_httpd != 0 ]; then
+	export BASE_URL="http://localhost:3001/post/run"  Removed duplicate /post/run
+fi
 
 
 while true; do
+
+date "+%Y%m%d_%H%M"
 pushd "$t/cpp_cli_srv" || exit 1  # Added error handling
 
 # Fixed URL and added proper JSON parsing
@@ -40,8 +54,14 @@ if [ $? == 0 ]; then  # Fixed condition check
             (
                 echo "now restart cpp_cli_srv ... "
                 cd "$t/cpp_cli_srv" && chmod +x build/cpp_srv build/cpp_cli 
-                nohup ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd  > /dev/null 2>&1 &
-                #nohup ./build/cpp_srv --port 10220 --port_https 10221 --ssl /ssl --threads 1 --log /root/jd/t/cpp_srv.log  --token jd > /dev/null 2>&1 &
+
+				if [ $flag_httpd != 0 ]; then
+					nohup ./build/cpp_srv --port 10220 --port_https 10221 --ssl /ssl --threads 1 --log ../cpp_srv.log  --token jd > /dev/null 2>&1 &
+				fi
+
+				if [$flag_httpd == 0 ];then
+					nohup ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd  > /dev/null 2>&1 &
+				fi
             )
 
         fi
@@ -52,6 +72,6 @@ fi
 
 popd
 
-sleep 15s
+sleep 30s
 done
 
