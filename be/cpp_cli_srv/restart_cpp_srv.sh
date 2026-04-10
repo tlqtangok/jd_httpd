@@ -17,7 +17,7 @@ export BASE_URL="http://localhost:10220/post/run"  # Removed duplicate /post/run
 echo $t |grep apache2
 export flag_httpd=$?
 if [ $flag_httpd != 0 ]; then
-	export BASE_URL="http://localhost:3001/post/run"  Removed duplicate /post/run
+	export BASE_URL="http://localhost:3001/post/run"  # Removed duplicate /post/run
 fi
 
 
@@ -60,7 +60,7 @@ if [ $? == 0 ]; then  # Fixed condition check
 					nohup ./build/cpp_srv --port 10220 --port_https 10221 --ssl /ssl --threads 1 --log ../cpp_srv.log  --token jd > /dev/null 2>&1 &
 				fi
 
-				if [$flag_httpd == 0 ];then
+				if [ $flag_httpd == 0 ];then
 					nohup ./build/cpp_srv --port 3001 --log ../cpp_srv.log --threads 2 --token jd  > /dev/null 2>&1 &
 				fi
             )
